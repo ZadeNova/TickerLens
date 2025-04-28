@@ -18,18 +18,17 @@ router = APIRouter()
 # Pydantic Data Models
 class StockDataBasic(BaseModel):
     symbol: str
-    display_name: str
-    previous_close: float
+    displayName: str
+    previousClose: float
     open: float
-    day_price_range: float
-    fiftytwo_week_range: float
+    fiftyTwoWeekRange: str
     volume: int
-    avg_volume: int
-    market_cap: int
+    averageVolume: int
+    marketCap: int
     beta: float
     sector: str
     industry: str
-    full_time_employees: str
+    fullTimeEmployees: int
 
 
 
@@ -40,10 +39,10 @@ class StockDataBasic(BaseModel):
 
 # Get stock ticker
 @router.post("/api/v1/stocks/{ticker}")
-def get_stock(ticker: str):
-    stock_data = yf.Ticker(ticker)
+def get_stock(ticker: str) -> StockDataBasic:
+    stock_data = yf.Ticker(ticker).info
     
-    return stock_data.info
+    return StockDataBasic(**stock_data)
     
 @router.post("/api/v1/etfs/{ticker}")
 def get_etf(ticker: str):
