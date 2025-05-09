@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional
 
+
 import os
 import requests
 import yfinance as yf
@@ -31,6 +32,10 @@ class StockDataBasic(BaseModel):
     sector: str
     industry: str
     fullTimeEmployees: int
+    longBusinessSummary: str
+    dayLow: float
+    dayHigh: float
+    currentPrice: float
 
 class ETFDataBasic(BaseModel):
     symbol: str
@@ -57,6 +62,12 @@ def get_stock(ticker: str) -> StockDataBasic:
     stock_data = yf.Ticker(ticker).info
     
     return StockDataBasic(**stock_data)
+
+@router.post("/api/v1/stocks/allinfo/{ticker}")
+def get_allinfo_stock(ticker : str):
+    stock_data = yf.Ticker(ticker).info
+    
+    return stock_data
     
 # Get ETF data
 @router.post("/api/v1/etfs/{ticker}")

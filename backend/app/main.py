@@ -9,7 +9,7 @@ from .v1.routes import data
 app = FastAPI()
 app.include_router(data.router)
 # Add URL 
-origins = []
+origins = ['localhost:3000']
 
 app.add_middleware(CORSMiddleware,
                    allow_origins=origins,
