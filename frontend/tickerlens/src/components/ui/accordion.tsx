@@ -12,7 +12,7 @@ function Accordion({
 	return (
 		<AccordionPrimitive.Root
 			data-slot="accordion"
-			className="hover:bg-indigo-100 shadow-md bg-indigo-50 rounded-lg p-2 mt-2 sm:mt-4"
+			className="card card-hover p-2 mt-2 sm:mt-4"
 			{...props}
 		/>
 	);
@@ -61,7 +61,7 @@ function AccordionContent({
 	return (
 		<AccordionPrimitive.Content
 			data-slot="accordion-content"
-			className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm"
+			className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-xs sm:text-sm"
 			{...props}
 		>
 			<div className={cn("pt-0 pb-4", className)}>{children}</div>

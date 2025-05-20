@@ -1,14 +1,18 @@
 from fastapi import APIRouter , HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional , Dict
 
 
 import os
 import requests
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import json
+from datetime import datetime, timedelta
+import pytz
+
 
 # Load variables from env files
 load_dotenv()
@@ -47,9 +51,32 @@ class ETFDataBasic(BaseModel):
     equity_holdings: dict
     sector_weightings: dict
 
+class ReturnsMetrics(BaseModel):
+    ytd_return: float
+    one_year_return: float
+    three_year_return: float
+    five_year_return: float
 
+# class BenchmarkResponse(BaseModel):
+#     ticker: str
+#     ticker_returns: ReturnsMetrics
+#     benchmark_returns: ReturnsMetrics
 
+class BenchmarkResponses(BaseModel):
+    other_tickers: Optional[Dict[str, ReturnsMetrics]] = {}
+    benchmark_returns: ReturnsMetrics
 
+    def get_ticker(self, symbol: str) -> ReturnsMetrics:
+        "Helper to access a specific ticker's returns"
+        return self.other_tickers[symbol]
+
+# Builder function for returns benchmark
+def create_response(ticker: str , ticker_data: dict, spy_data: dict) -> BenchmarkResponses:
+    return BenchmarkResponses(
+        ticker = ticker,
+        ticker_returns = ReturnsMetrics(**ticker_data),
+        benchmark_returns = ReturnsMetrics(**spy_data)
+    )
 
 # TODO: Settle Data model first
 # TODO: After handling data model settle error validation.
@@ -68,7 +95,58 @@ def get_allinfo_stock(ticker : str):
     stock_data = yf.Ticker(ticker).info
     
     return stock_data
+
+@router.post("/api/v1/stocks/returns/{ticker}")
+def get_stock_benchmark(ticker: str) -> BenchmarkResponses:
+    price_history = yf.Ticker(ticker).history(period="10y")
+    spy_index_price_history = yf.Ticker("^GSPC").history(period="10y")
     
+    # Calculate total returns for the YTD , 1Y ago , 3Y ago and 5Y ago.
+      
+    # Use US timezone
+    us_timezone = pytz.timezone("America/New_York")
+    today_date = datetime.now(us_timezone).replace(hour=0,minute=0,second=0,microsecond=0)
+    ytd_date = datetime(today_date.year, 1, 1, tzinfo=us_timezone)
+    one_year_ago = today_date - timedelta(days=365)
+    three_years_ago = today_date - timedelta(days=365 * 3)
+    five_years_ago = today_date - timedelta(days=365 * 5)
+
+    # This should be a function. Calculate both ticker and SPY index returns
+    try:
+        returns_dict = {"ytd_return":ytd_date,"one_year_return":one_year_ago,"three_year_return":three_years_ago,"five_year_return":five_years_ago}
+
+        spy_index_returns_dict = {"ytd_return":ytd_date,"one_year_return":one_year_ago,"three_year_return":three_years_ago,"five_year_return":five_years_ago}
+        for key in returns_dict:
+
+            returns_dict[key] = get_return(price_history, returns_dict[key] , today_date)
+
+            spy_index_returns_dict[key] = get_return(spy_index_price_history, spy_index_returns_dict[key], today_date)
+            
+        #print(returns_dict)
+    except Exception as e:
+        print(f'ERROR ERROR ERROR ${e} ERROR ERROR')
+
+    #print(price_history_reset.info())
+    #response = create_response(ticker , returns_dict , spy_index_returns_dict)
+    response = BenchmarkResponses(
+        benchmark_returns = spy_index_returns_dict,
+        other_tickers = { ticker: ReturnsMetrics(**returns_dict) }
+    )
+    print(response)
+    return response
+    
+def get_return(df: pd.DataFrame , start_date, end_date):
+    
+    # Find nearest trading days
+    start_idx = df.index.get_indexer([start_date], method="nearest")[0]
+    end_idx = df.index.get_indexer([end_date], method="nearest")[0]
+
+    start_price = df.iloc[start_idx]['Close']
+    end_price = df.iloc[end_idx]['Close']
+    
+    return np.round(((end_price - start_price) / start_price) * 100,2)
+
+
 # Get ETF data
 @router.post("/api/v1/etfs/{ticker}")
 def get_etf(ticker: str) -> Optional[ETFDataBasic]:

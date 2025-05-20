@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "./ThemeToggleBtn";
 export function NavBar() {
 
 	const router = useRouter();
@@ -18,14 +19,14 @@ export function NavBar() {
 	}
 
 	return (
-		<nav className="w-full px-6 py-4 bg-gray-100 hover:text-indigo-700 text-gray-900 border-b border-gray-200 shadow-sm">
+		<nav className="w-full px-6 py-4 bg-slate-50 border-b-3 border-indigo-300 dark:bg-slate-900 dark:border-indigo-500">
 			<div className="flex items-center h-12">
 				{/* Left: Logo */}
 				<div className="flex items-center">
 					<Link href="/">
 					<span className="text-2xl font-bold font-mono">
-						<span className="text-indigo-500 text-2xl font-bold">Ticker</span>
-						<span className="text-black font-mono">Lens</span>
+						<span className="text-indigo-500 text-2xl font-bold dark:text-indigo-300 dark:drop-shadow-[0_0_10px_rgba(99,102,241,0.9)]">Ticker</span>
+						<span className="text-slate-800 font-mono dark:text-slate-100">Lens</span>
 					</span>
 					</Link>
 					
@@ -48,22 +49,7 @@ export function NavBar() {
 				</div>
 
 				<div className="flex items-center space-x-4">
-					<button className="rounded-full p-2 cursor-pointer">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						className="size-6"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
-						/>
-					</svg>
-					</button>
+					<ThemeToggle/>
 				</div>
 			</div>
 		</nav>

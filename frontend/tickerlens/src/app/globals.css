@@ -41,6 +41,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --shimmer-bg: linear-gradient(
+      45deg,
+      rgb(238, 238, 238) 40%,
+      rgb(245, 245, 245) 50%,
+      rgb(238, 238, 238) 60%
+    );
 }
 
 :root {
@@ -110,6 +116,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+
+  --shimmer-bg: linear-gradient(
+    45deg,
+    rgb(51, 65, 85) 40%,
+    rgb(71, 85, 105) 50%,
+    rgb(51, 65, 85) 60%
+  );
 }
 
 @layer base {
@@ -119,4 +132,75 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.card {
+  @apply bg-slate-100 rounded-xl shadow-md border-slate-200 border-2 dark:bg-slate-700 dark:border-slate-600
+}
+
+.card-hover {
+  @apply hover:bg-slate-200 dark:hover:bg-slate-800
+}
+
+@layer utilities {
+  @keyframes shimmer {
+    0% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0 50%;
+    }
+  }
+
+  .shimmer {
+    background-size: 300% 300%;
+    background-repeat: no-repeat;
+    background-image: var(--shimmer-bg);
+    animation: shimmer 3.5s ease infinite;
+  }
+
+  /*.animate-shimmer-light {
+    /* animation: shimmer 2.5s ease infinite; */
+    /* background-image: linear-gradient(
+      45deg,
+      rgb(238, 238, 238) 40%,
+      rgb(245, 245, 245) 50%,
+      rgb(238, 238, 238) 60%
+    ); */
+    /* background-size: 300% 300%;
+    background-repeat: no-repeat; */
+  /*} */
+
+  /*.animate-shimmer-dark {
+    /* animation: shimmer 4s ease infinite; */
+    /* background-image: linear-gradient(
+      45deg,
+      rgb(51, 65, 85) 40%,
+      rgb(71, 85, 105) 50%,
+      rgb(51, 65, 85) 60%
+    ); */
+    /* background-size: 300% 300%;
+    background-repeat: no-repeat; */
+  /*}*/
+}
+
+h1, h2, h3 {
+  font-family: var(--font-space);
+  font-weight: bold;
+}
+
+h1 {
+  font-size:x-large
+}
+
+h2 {
+  font-size:larger
+}
+
+h3 {
+  font-size: large;
+}
+
+dd , dl , dt , p {
+  font-family: var(--font-plex);
 }
