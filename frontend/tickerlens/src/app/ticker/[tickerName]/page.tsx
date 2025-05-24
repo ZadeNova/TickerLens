@@ -100,6 +100,7 @@ interface TickerAndBenchmarkDataPoint {
 
 type TickerBenchmarkData = TickerAndBenchmarkDataPoint[];
 
+// Helper functions
 function formatNumbers(number?: number) {
 	
 	if (number === undefined) return "N/A";
@@ -107,6 +108,18 @@ function formatNumbers(number?: number) {
 	const formatter = Intl.NumberFormat("en",{notation: "compact"});
 	return formatter.format(number);
 }
+
+const formatPrice = (price: number | null | undefined): string => {
+	if (price === undefined || price === null){
+		return 'N/A';
+	}
+
+	const decimalPart = price.toString().split('.')[1];
+	const hasThreeDecimals = decimalPart?.length >= 3;
+	
+	return hasThreeDecimals ? price.toFixed(2) : price.toString();
+}
+
 
 // Print the card element 4 times. Have a datastructure to loop from
 
@@ -198,15 +211,13 @@ export default async function tickerInfo({
 }) {
 	const { tickerName } = await params;
 	console.log(tickerName);
-	// const data = await getTickerData(tickerName);
+
 	// const data = {
 	// 	symbol: "RKLB",
 	// 	displayName: "RocketLab USA",
 	// 	industry: "Aerospace",
 	// }; 
 	
-
-	// const stock_returns_data: TickerBenchmarkData | null = await getReturnsData(tickerName);
 	
 	const [stock_returns_data , data] = await Promise.all([
 		getReturnsData(tickerName),
@@ -221,7 +232,7 @@ export default async function tickerInfo({
 						{data?.displayName} ({data?.symbol})
 					</h1>
 					<div className="flex">
-						<h3 className="font-bold mb-4">Current Price: ${data?.currentPrice.toFixed(2)}</h3>
+						<h3 className="font-bold mb-4">Current Price: ${data?.currentPrice}</h3>
 					</div>
 					<div className="card p-2 w-full h-32 border-2 shimmer">
 						
@@ -239,7 +250,7 @@ export default async function tickerInfo({
 							<dt>Previous Close</dt>
 							<dd>${data?.previousClose}</dd>
 							<dt>Day&apos;s range</dt>
-							<dd>${data?.dayLow.toFixed(2)} - ${data?.dayHigh.toFixed(2)}</dd>
+							<dd>${formatPrice(data?.dayLow)} - ${formatPrice(data?.dayHigh)}</dd>
 							<dt>Market Cap</dt>
 							<dd>{formatNumbers(data?.marketCap)}</dd>
 							<dt>Beta</dt>

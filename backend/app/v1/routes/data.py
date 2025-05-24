@@ -57,10 +57,6 @@ class ReturnsMetrics(BaseModel):
     three_year_return: float
     five_year_return: float
 
-# class BenchmarkResponse(BaseModel):
-#     ticker: str
-#     ticker_returns: ReturnsMetrics
-#     benchmark_returns: ReturnsMetrics
 
 class BenchmarkResponses(BaseModel):
     other_tickers: Optional[Dict[str, ReturnsMetrics]] = {}

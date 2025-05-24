@@ -14,8 +14,9 @@ export function NavBar() {
 
 		
 
-		setQuery(""); // Clear search bar before navigating to new page.
+		
 		router.push(`/ticker/${query.toUpperCase()}`); // Redirect to new page to display Ticker Data.
+		setQuery(""); // Clear search bar before navigating to new page.
 	}
 
 	return (
