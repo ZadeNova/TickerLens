@@ -1,7 +1,7 @@
 from fastapi import APIRouter , HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from typing import Optional , Dict
+from typing import Optional , Dict , Union , List
 
 
 import os
@@ -10,7 +10,8 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
 import pytz
 
 
@@ -26,20 +27,46 @@ router = APIRouter()
 class StockDataBasic(BaseModel):
     symbol: str
     displayName: str
-    previousClose: float
-    open: float
-    fiftyTwoWeekRange: str
     volume: int
     averageVolume: int
     marketCap: int
-    beta: float
+    beta: Optional[float] = None
     sector: str
     industry: str
     fullTimeEmployees: int
     longBusinessSummary: str
+    website: str
+    open: float
     dayLow: float
     dayHigh: float
     currentPrice: float
+    previousClose: float
+    fiftyTwoWeekRange: str
+    # Profitability
+    profitMargins: float
+    operatingMargins: float
+    # Management Effectiveness.
+    returnOnAssets: float
+    returnOnEquity: float
+    #Balance Sheet
+    totalCash: float
+    totalCashPerShare: float
+    totalDebt: float
+    debtToEquity: float
+    currentRatio: float
+    quickRatio: float
+    # Fundamental Ratios
+    # Have to comment out trailingPE if not there will be an error.
+    #trailingPE: float
+    forwardPE: float
+    bookValue: float
+    priceToBook: float
+    trailingEps: float
+    forwardEps: float
+    ebitda: Optional[float] = None
+    totalDebt: float
+
+
 
 class ETFDataBasic(BaseModel):
     symbol: str
@@ -66,6 +93,16 @@ class BenchmarkResponses(BaseModel):
         "Helper to access a specific ticker's returns"
         return self.other_tickers[symbol]
 
+
+class PricePoint(BaseModel):
+    date: date
+    close: float
+
+
+class Historical_price_data_response(BaseModel):
+    price_data: Dict[str, List[PricePoint]]
+
+
 # Builder function for returns benchmark
 def create_response(ticker: str , ticker_data: dict, spy_data: dict) -> BenchmarkResponses:
     return BenchmarkResponses(
@@ -78,6 +115,17 @@ def create_response(ticker: str , ticker_data: dict, spy_data: dict) -> Benchmar
 # TODO: After handling data model settle error validation.
 # TODO: Learn about rate limiters and add it to every single route.
 # TODO: Display basic data first.
+
+
+
+# Test function
+@router.post("/api/v1/test/{ticker}")
+def test_func(ticker:str):
+    test_ticker = yf.Ticker(ticker)
+    print(test_ticker.history(start="2024-01-01",end="2025-08-13",interval="1d"))
+    return "It worked"
+
+
 
 # Get stock ticker
 @router.post("/api/v1/stocks/{ticker}")
@@ -103,9 +151,9 @@ def get_stock_benchmark(ticker: str) -> BenchmarkResponses:
     us_timezone = pytz.timezone("America/New_York")
     today_date = datetime.now(us_timezone).replace(hour=0,minute=0,second=0,microsecond=0)
     ytd_date = datetime(today_date.year, 1, 1, tzinfo=us_timezone)
-    one_year_ago = today_date - timedelta(days=365)
-    three_years_ago = today_date - timedelta(days=365 * 3)
-    five_years_ago = today_date - timedelta(days=365 * 5)
+    one_year_ago = today_date - relativedelta(years=1)
+    three_years_ago = today_date - relativedelta(years=3)
+    five_years_ago = today_date - relativedelta(years=5)
 
     # This should be a function. Calculate both ticker and SPY index returns
     try:
@@ -137,11 +185,72 @@ def get_return(df: pd.DataFrame , start_date, end_date):
     start_idx = df.index.get_indexer([start_date], method="nearest")[0]
     end_idx = df.index.get_indexer([end_date], method="nearest")[0]
 
+    
     start_price = df.iloc[start_idx]['Close']
     end_price = df.iloc[end_idx]['Close']
     
     return np.round(((end_price - start_price) / start_price) * 100,2)
 
+
+# Get Stock Historical Price Data
+@router.post("/api/v1/stocks/historicaldata/{ticker}")
+def get_historical_data_stock(ticker: str):
+
+    # Get Stock price history
+    stock_price_history = yf.Ticker(ticker).history(period="max")
+
+    # Use US timezone
+    us_timezone = pytz.timezone("America/New_York")
+    today_date = datetime.now(us_timezone).replace(hour=0,minute=0,second=0,microsecond=0)
+    ytd_date = datetime(today_date.year, 1, 1, tzinfo=us_timezone)
+    one_month_ago = today_date - relativedelta(months=1)
+    six_months_ago = today_date - relativedelta(months=6)
+    one_year_ago = today_date - relativedelta(years=1)
+    three_years_ago = today_date - relativedelta(years=3)
+    five_years_ago = today_date - relativedelta(years=5)
+
+    print(today_date, "TODAYS DATE")
+
+    try:
+        price_data_by_timeframe = {
+            "one_month_ago": one_month_ago,
+            "six_months_ago": six_months_ago,
+            "year_to_date":ytd_date,
+            "one_year_ago":one_year_ago,
+            "three_years_ago":three_years_ago,
+            "five_years_ago":five_years_ago,
+        }
+
+        for key in price_data_by_timeframe:
+            price_data_by_timeframe[key] = extract_historical_price_data_from_dataframe(stock_price_history,today_date,price_data_by_timeframe[key])
+        
+        # Find a way and use pydantic model for this
+        #print(price_data_by_timeframe)
+        print("Historical function is working!")
+        #return Historical_price_data_response(price_data=price_data_by_timeframe)
+        return Historical_price_data_response(price_data=price_data_by_timeframe)
+    except Exception as e:
+        print(f"There is an error {e}")
+
+
+
+    
+def extract_historical_price_data_from_dataframe(df: pd.DataFrame,todays_date,historical_date):
+    # Find nearest trading days
+    #print(todays_date,historical_date)
+    historical_date_idx = df.index[df.index.get_indexer([historical_date], method="nearest")[0]]
+    todays_date_idx = df.index[df.index.get_indexer([todays_date], method="nearest")[0]]
+    
+    price_data = df.loc[historical_date_idx:todays_date_idx]
+
+    
+    return [
+        PricePoint(date=index.date(), close=row["Close"])
+        for index, row in price_data.iterrows()
+    ]
+
+
+    
 
 # Get ETF data
 @router.post("/api/v1/etfs/{ticker}")

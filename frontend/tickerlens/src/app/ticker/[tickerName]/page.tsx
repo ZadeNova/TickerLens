@@ -8,12 +8,15 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
+  //CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+	ChartLineDefault
+} from "@/components/ui/price_chart"
 
-import { ChartLineIcon } from "lucide-react";
+//import { ChartLineIcon } from "lucide-react";
 
 
 
@@ -100,6 +103,32 @@ interface TickerAndBenchmarkDataPoint {
 
 type TickerBenchmarkData = TickerAndBenchmarkDataPoint[];
 
+export interface TickerHistoricalPriceData {
+	price_data: Historical_Timeframes
+
+}
+
+export interface Historical_Timeframes {
+	one_month_ago: Array<Historical_Stock_Price_Data_Point>,
+	six_months_ago: Array<Historical_Stock_Price_Data_Point>,
+	year_to_date: Array<Historical_Stock_Price_Data_Point>,
+	one_year_ago: Array<Historical_Stock_Price_Data_Point>,
+	three_years_ago: Array<Historical_Stock_Price_Data_Point>,
+	five_years_ago: Array<Historical_Stock_Price_Data_Point>,
+
+}
+
+export interface Historical_Stock_Price_Data_Point {
+	date: string,
+	close: number;
+}
+
+
+
+
+// What we did.
+// Changed revalidation to 1800 from 900
+
 // Helper functions
 function formatNumbers(number?: number) {
 	
@@ -121,14 +150,40 @@ const formatPrice = (price: number | null | undefined): string => {
 }
 
 
-// Print the card element 4 times. Have a datastructure to loop from
+// 1D , 5D , 1M , 6M , YTD , 1Y , 5Y 
+
+async function getHistoricalData(ticker: string):Promise<TickerHistoricalPriceData | null>{
+	try {
+		const response = await fetch(`http://127.0.0.1:8000/api/v1/stocks/historicaldata/${ticker}`,
+			{
+				method: 'POST',
+				next: {revalidate: 1800}
+			}
+		)
+
+		if (!response.ok){
+			console.error(`Server responded with status ${response.status} Historical Data Function`);
+			return null;
+		}
+		
+		const price_data = await response.json()
+		//console.log(price_data)
+		return price_data
+	}
+
+	catch(error){
+		console.log("Fetch failed: ",error)
+		return null;
+	}
+
+}
 
 async function getReturnsData(ticker: string): Promise<TickerBenchmarkData | null>{
 	try {
 		const response = await fetch(`http://127.0.0.1:8000/api/v1/stocks/returns/${ticker}`,
 			{
 				method: "POST",
-				next: { revalidate: 900},
+				next: { revalidate: 1800},
 			}
 		);
 
@@ -184,12 +239,12 @@ async function getTickerData(ticker: string): Promise<TickerData | null> {
 			`http://127.0.0.1:8000/api/v1/stocks/${ticker}`,
 			{
 				method: "POST",
-				next: { revalidate: 900 },
+				next: { revalidate: 1800 },
 			}
 		);
 
 		if (!response.ok){
-			console.error(`Server responded with status ${response.status}`);
+			console.error(`Server responded with status ${response.status} getTickerData function`);
 			return null;
 		}
 
@@ -219,10 +274,13 @@ export default async function tickerInfo({
 	// }; 
 	
 	
-	const [stock_returns_data , data] = await Promise.all([
+	const [stock_returns_data , data, priceData] = await Promise.all([
 		getReturnsData(tickerName),
-		getTickerData(tickerName)
+		getTickerData(tickerName),
+		getHistoricalData(tickerName),
 	])
+
+	
 
 	return (
 		<>
@@ -234,16 +292,21 @@ export default async function tickerInfo({
 					<div className="flex">
 						<h3 className="font-bold mb-4">Current Price: ${data?.currentPrice}</h3>
 					</div>
-					<div className="card p-2 w-full h-32 border-2 shimmer">
-						
+					{/* <div className="card p-2 w-full h-32 border-2 shimmer">
+
 						<div className="justify-center items-center flex flex-col">
 							<span className="text-indigo-500 font-bold">
 								Chart is still in development.
 								
 							</span>
 							<ChartLineIcon className="w-10 h-10 text-violet-500 mb-2" />
+
+							
+
 						</div>
-					</div>
+					</div> */}
+					
+					<ChartLineDefault data={priceData || null}></ChartLineDefault>
 					{/* Display stock basic data first */}
 					<div className="card p-2 w-full overflow-hidden mt-2 h-46 sm:h-32 sm:mt-4">
 						<dl className="grid grid-cols-4 gap-x-4 gap-y-2 md:grid-cols-8 text-xs sm:text-sm">
