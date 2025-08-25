@@ -19,6 +19,7 @@ Inspired by Yahoo Finance, built to learn and explore fintech development.
 - **Data**: yFinance API (free tier)
 
 ## 🚧 Work in Progress
+- **Fixing any data mismatches.** Data should be almost the same when viewed on yahoo finance and TickerLens.
 - Fixing returns history based on timeframe.
 - Adding more data points from YFinance API. Currently website only displays about 8 basic financial data points.
 - Enhancing **error handling** for API failures. Add error 404
